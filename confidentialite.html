@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Confidentialité — PokéMonde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main class="game-wrap">
+    <div class="page-head">
+      <h1>🔒 Confidentialité</h1>
+      <p>Ce qu'on garde, pourquoi, et comment tout effacer. En bref : le strict minimum, rien n'est vendu, aucune publicité.</p>
+    </div>
+    <div class="card">
+      <h2>Sans compte</h2>
+      <p>Tu peux jouer à tout sans compte. Tes parties et tes préférences sont alors gardées <b>uniquement dans ton navigateur</b> (stockage local), jamais envoyées ailleurs. Pour les défis du jour, tes propositions sont envoyées au serveur pour être comparées à la réponse secrète, mais rien n'est enregistré.</p>
+
+      <h2>Avec un compte</h2>
+      <p>On enregistre :</p>
+      <ul>
+        <li>ton <b>adresse e-mail</b> et ton mot de passe (chiffré, illisible même pour nous) — pour te connecter. L'e-mail n'est jamais affiché ni partagé ;</li>
+        <li>ton <b>pseudo</b> et ton <b>avatar</b> Pokémon — affichés publiquement dans les classements ;</li>
+        <li>tes <b>résultats</b> (jeu, date, score, points) — affichés dans les classements ;</li>
+        <li>l'état de tes parties en cours (pour reprendre une grille du jour sur un autre appareil).</li>
+      </ul>
+      <p>Ces données servent seulement à faire fonctionner le site (connexion, scores, classements). Pas de publicité, pas de revente, pas de pistage.</p>
+
+      <h2>Où sont les données ?</h2>
+      <p>Les comptes sont hébergés par <a href="https://supabase.com" target="_blank" rel="noopener">Supabase</a>, sur des serveurs situés en Irlande (Union européenne). Le site lui-même est hébergé par GitHub Pages.</p>
+
+      <h2>Moins de 15 ans ?</h2>
+      <p>En France, il faut l'accord d'un parent pour créer un compte avant 15 ans. Choisis un pseudo qui ne révèle pas ton vrai nom.</p>
+
+      <h2>Tes droits</h2>
+      <p>Tu peux à tout moment changer ton pseudo et ton avatar, et <b>supprimer ton compte</b> depuis la page <a href="profil.html">Mon compte</a> : ton compte, tes scores et tes parties sont alors effacés immédiatement et définitivement. Pour toute question, ouvre un ticket sur la <a href="https://github.com/Matmattb/Pok-Site/issues" target="_blank" rel="noopener">page GitHub du projet</a>.</p>
+
+      <h2>Cookies</h2>
+      <p>Aucun cookie publicitaire ou de mesure d'audience. Seul le stockage local du navigateur est utilisé (préférences, parties en cours, et ta session si tu es connecté).</p>
+    </div>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/logic.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/online.js"></script>
+</body>
+</html>

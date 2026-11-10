@@ -14,6 +14,7 @@
       <h1>⏱️ Défi Pokédex</h1>
       <p>Écris le nom d'un maximum de Pokémon avant la fin du temps ! Pas besoin d'accents ni de majuscules ; les noms anglais sont aussi acceptés.</p>
     </div>
+    <div id="rank" class="center" style="margin-bottom:12px"></div>
     <div class="game-bar" id="setup">
       <select id="gen"><option value="0">Tous (1025)</option></select>
       <select id="dur"><option value="180">3 minutes</option><option value="300" selected>5 minutes</option><option value="600">10 minutes</option><option value="1200">20 minutes</option></select>
@@ -29,15 +30,22 @@
   </main>
   <script src="assets/js/data.js"></script>
   <script src="assets/js/common.js"></script>
+  <script src="assets/js/logic.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/online.js"></script>
   <script>
   (function () {
-    const { P, sprite, norm, store, toast, confetti, GEN_NAMES } = PK;
+    const { P, sprite, norm, store, toast, confetti, GEN_NAMES, L } = PK;
+    const O = PK.online;
     const $ = id => document.getElementById(id);
     for (let g = 1; g <= 9; g++) $('gen').insertAdjacentHTML('beforeend', `<option value="${g}">Génération ${g} — ${GEN_NAMES[g]} (${P.filter(p => p.gen === g).length})</option>`);
-    let pool, found, end, timer;
-    function start() {
-      const g = +$('gen').value;
-      pool = P.filter(p => !g || p.gen === g);
+    let pool, found, end, timer, G, running = false;
+    async function start() {
+      const g = +$('gen').value, dur = +$('dur').value;
+      $('go').disabled = true;
+      G = await O.arcade('chrono', { gen: g, dur });
+      $('go').disabled = false;
+      pool = L.chronoPool(g); running = true;
       found = new Set(); end = Date.now() + +$('dur').value * 1000;
       $('setup').style.display = 'none'; $('play').style.display = ''; $('result').innerHTML = '';
       $('total').textContent = pool.length; $('found').textContent = 0;
@@ -54,20 +62,24 @@
       const v = norm($('inp').value); if (!v) return;
       const p = pool.find(p => !found.has(p.id) && (p._n === v || p._en === v));
       if (!p) return;
-      found.add(p.id); $('inp').value = '';
+      found.add(p.id); G.answers.push(p.id); $('inp').value = '';
       const c = $('c' + p.id); c.classList.add('found'); c.innerHTML = `<img src="${sprite(p.id)}" alt="" title="${p.n}">`;
       $('found').textContent = found.size;
       if (found.size === pool.length) { confetti(); stop(); }
     });
-    function stop() {
+    async function stop() {
+      if (!running) return; running = false;
       clearInterval(timer);
       $('play').style.display = 'none'; $('setup').style.display = '';
       pool.filter(p => !found.has(p.id)).forEach(p => { const c = $('c' + p.id); c.classList.add('missed'); c.innerHTML = `<img src="${sprite(p.id)}" alt="" title="${p.n}">`; });
       const key = 'chrono:best:' + $('gen').value + ':' + $('dur').value, best = store.get(key, 0);
       if (found.size > best) store.set(key, found.size);
-      $('result').innerHTML = `<div class="card result-box"><h2>Temps écoulé !</h2><p>Tu as trouvé <b>${found.size}</b> Pokémon sur ${pool.length} (${Math.round(found.size / pool.length * 100)} %).</p><p class="muted">Record pour ce mode : ${Math.max(best, found.size)}. Les Pokémon grisés sont ceux qui t'ont échappé (survole-les pour leur nom).</p></div>`;
+      $('result').innerHTML = `<div class="card result-box"><h2>Temps écoulé !</h2><p>Tu as trouvé <b>${found.size}</b> Pokémon sur ${pool.length} (${Math.round(found.size / pool.length * 100)} %).</p><p class="muted">Record pour ce mode : ${Math.max(best, found.size)}. Les Pokémon grisés sont ceux qui t'ont échappé (survole-les pour leur nom).</p><div id="end"><p class="muted">Enregistrement…</p></div></div>`;
+      const g = G, endR = await O.arcadeEnd(g);
+      if ($('end') && g === G) $('end').innerHTML = O.endHtml(endR, `chrono-${$('gen').value}-${$('dur').value}`);
     }
     $('go').onclick = start; $('stop').onclick = stop;
+    O.rankBanner($('rank'), 'un classement par génération et par durée');
   })();
   </script>
 </body>

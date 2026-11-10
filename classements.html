@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Classements — PokéMonde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main class="game-wrap">
+    <div class="page-head">
+      <h1>🏆 Classements</h1>
+      <p>Les scores sont vérifiés par le serveur avant d'être enregistrés. Défis du jour : chaque victoire rapporte des points (plus tu es rapide, plus tu en gagnes). Arcade : on garde ton meilleur score.</p>
+    </div>
+    <div id="me" class="center" style="margin-bottom:14px"></div>
+    <div class="tabs" id="cats" style="justify-content:center">
+      <button class="tab" data-c="general">🌍 Général</button>
+      <button class="tab" data-c="jour">📅 Défis du jour</button>
+      <button class="tab" data-c="arcade">🕹️ Arcade</button>
+      <button class="tab" data-c="rarete">🧩 Rareté Pokédoku</button>
+    </div>
+    <div class="game-bar" id="filters"></div>
+    <div class="card" id="out"><p class="muted center">Chargement…</p></div>
+    <p class="help mt" id="help"></p>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/categories.js"></script>
+  <script src="assets/js/logic.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/online.js"></script>
+  <script>
+  (function () {
+    const { sprite, byId, store, L, ALL, GEN_NAMES } = PK;
+    const O = PK.online;
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    const PERIODS = { jour: "Aujourd'hui", semaine: 'Cette semaine', tout: 'Depuis toujours' };
+    const ARCADE = {
+      quiz: { name: '⚡ Quiz des types', sub: null },
+      hl: { name: '⚖️ Plus ou Moins', sub: Object.entries(L.HL_CRITS).map(([k, c]) => [k, c.label]) },
+      memory: { name: '🃏 Memory', sub: L.MEMORY_SIZES.map(n => [n, n + ' paires']) },
+      chrono: { name: '⏱️ Défi Pokédex', sub: 'chrono' },
+    };
+
+    // État des filtres (repris de l'URL ?jeu=…)
+    const st = Object.assign({ c: 'general', period: 'jour', daily: 'pokedle-classique', arc: 'quiz', hl: 'poids', memory: 8, gen: 0, dur: 300, rday: 'hier' }, store.get('lb:state', {}));
+    const q = new URLSearchParams(location.search).get('jeu');
+    if (q) {
+      if (L.DAILY_GAMES.includes(q)) { st.c = 'jour'; st.daily = q; }
+      else {
+        const [a, b, c] = q.split('-');
+        if (ARCADE[a]) { st.c = 'arcade'; st.arc = a; if (a === 'hl') st.hl = b; if (a === 'memory') st.memory = +b; if (a === 'chrono') { st.gen = +b; st.dur = +c; } }
+      }
+    }
+    const save = () => store.set('lb:state', st);
+    const opt = (v, l, cur) => `<option value="${v}" ${String(v) === String(cur) ? 'selected' : ''}>${l}</option>`;
+    const sel = (id, opts, cur) => `<select id="${id}">${opts.map(([v, l]) => opt(v, l, cur)).join('')}</select>`;
+
+    function arcadeId() {
+      if (st.arc === 'quiz') return 'quiz';
+      if (st.arc === 'hl') return 'hl-' + st.hl;
+      if (st.arc === 'memory') return 'memory-' + st.memory;
+      return `chrono-${st.gen}-${st.dur}`;
+    }
+
+    function filters() {
+      let h = '';
+      if (st.c !== 'rarete') h += sel('period', Object.entries(PERIODS), st.period);
+      if (st.c === 'jour') h += sel('daily', L.DAILY_GAMES.map(g => [g, L.GAME_NAMES[g]]), st.daily);
+      if (st.c === 'arcade') {
+        h += sel('arc', Object.entries(ARCADE).map(([k, a]) => [k, a.name]), st.arc);
+        if (st.arc === 'hl') h += sel('hl', ARCADE.hl.sub, st.hl);
+        if (st.arc === 'memory') h += sel('memory', ARCADE.memory.sub, st.memory);
+        if (st.arc === 'chrono') {
+          h += sel('gen', [[0, 'Tous les Pokémon'], ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map(g => [g, 'Génération ' + g + ' — ' + GEN_NAMES[g]])], st.gen);
+          h += sel('dur', L.CHRONO_DURATIONS.map(d => [d, d / 60 + ' minutes']), st.dur);
+        }
+      }
+      if (st.c === 'rarete') h += sel('rday', [['hier', 'Grille d\'hier'], ['jour', 'Grille du jour (après l\'avoir finie)']], st.rday);
+      $('filters').innerHTML = h;
+      $('filters').querySelectorAll('select').forEach(s => s.onchange = () => { st[s.id] = isNaN(+s.value) ? s.value : +s.value; save(); render(); });
+    }
+
+    function table(rows, kind) {
+      if (!rows.length) return `<p class="center muted">Personne n'est encore classé ici${st.period === 'jour' ? " aujourd'hui" : ''}. ${O.user ? 'À toi de jouer !' : '<a href="profil.html">Crée un compte</a> et sois le premier !'}</p>`;
+      const medal = r => r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : r;
+      const val = r => kind === 'general' ? `${r.valeur} pts` : kind === 'jour' ? `${r.valeur} pts` : String(arcadeId()).startsWith('memory') ? esc(r.label) : r.valeur;
+      const sub = r => kind === 'general' ? (st.period === 'tout' ? (l => `${l.icon} ${l.name}`)(L.levelOf(r.valeur)) : `${r.parties} partie${r.parties > 1 ? 's' : ''}`) : kind === 'jour' ? esc(r.label) : (String(arcadeId()).startsWith('memory') ? '' : esc(r.label));
+      let h = '<table class="board"><tr><th></th><th>Dresseur</th><th></th><th style="text-align:right">' + (kind === 'arcade' ? 'Record' : 'Points') + '</th></tr>', prev = 0;
+      rows.forEach(r => {
+        if (prev && r.rang > prev + 1 && O.user && r.user_id === O.user.id) h += '<tr class="gap"><td colspan="4">…</td></tr>';
+        prev = r.rang;
+        h += `<tr class="${O.user && r.user_id === O.user.id ? 'me' : ''}"><td class="rk">${medal(r.rang)}</td><td class="who"><img src="${sprite(r.avatar)}" alt="">${esc(r.pseudo)}</td><td class="muted">${sub(r)}</td><td class="val">${val(r)}</td></tr>`;
+      });
+      return h + '</table>';
+    }
+
+    // Rareté : réponses les plus et les moins données au Pokédoku
+    async function rarity() {
+      const day = PK.todayKey(), d = new Date(day + 'T12:00:00Z');
+      if (st.rday === 'hier') d.setUTCDate(d.getUTCDate() - 1);
+      const dk = d.toISOString().slice(0, 10);
+      const grid = PK.genDoku('normal', PK.dailyRng('pokedoku', dk), ALL);
+      const { data, error } = await O.sb.rpc('doku_rarity', { p_day: dk });
+      if (error) throw error;
+      if (!data.length) return `<p class="center muted">${st.rday === 'jour' ? 'Termine d\'abord la <a href="jeu-pokedoku.html">grille du jour</a> (en étant connecté) pour voir ce que les autres ont répondu.' : 'Personne n\'a joué à cette grille.'}</p>`;
+      const cells = Array.from({ length: 9 }, () => []);
+      data.forEach(r => cells[r.cell].push(r));
+      let h = `<p class="center"><b>Grille du ${d.toLocaleDateString('fr-FR', { timeZone: 'UTC' })}</b> — les réponses les plus données, et les plus rares ✨</p><div class="doku">`;
+      h += '<div class="doku-corner"></div>' + grid.cols.map(c => `<div class="doku-label"><span>${c.html}</span></div>`).join('');
+      grid.rows.forEach((r, i) => {
+        h += `<div class="doku-label"><span>${r.html}</span></div>`;
+        for (let j = 0; j < 3; j++) {
+          const l = cells[i * 3 + j], tot = l.reduce((a, x) => a + x.n, 0);
+          const line = (x, rare) => `<div><img src="${sprite(x.pokemon_id)}" alt="">${rare ? '✨' : ''}${byId[x.pokemon_id] ? byId[x.pokemon_id].n : '?'}<b>${Math.round(x.n / tot * 100)} %</b></div>`;
+          const top = l.slice(0, 2), rare = l.length > 2 ? [l[l.length - 1]] : [];
+          h += `<div class="rar-cell">${l.length ? top.map(x => line(x)).join('') + rare.map(x => line(x, true)).join('') + `<small class="muted">${tot} réponse${tot > 1 ? 's' : ''} · ${l.length} Pokémon différents</small>` : '<span class="muted">Personne</span>'}</div>`;
+        }
+      });
+      return h + '</div>';
+    }
+
+    let token = 0;
+    async function render() {
+      document.querySelectorAll('#cats .tab').forEach(b => b.classList.toggle('active', b.dataset.c === st.c));
+      filters();
+      const HELP = {
+        general: 'Classement général : la somme des points gagnés dans tous les jeux. Sur « Depuis toujours », le niveau de dresseur est affiché.',
+        jour: 'Défis du jour : points gagnés (100 au Pokédle trouvé du 1er coup, 10 à 20 par case du Pokédoku selon la rareté, jusqu\'à 100 au 4 par 4). Sur une semaine, les points s\'additionnent.',
+        arcade: 'Arcade : ton meilleur score sur la période (Memory : le moins de coups, puis le plus rapide).',
+        rarete: 'Rareté : part des joueurs ayant donné chaque réponse. Une réponse rare rapporte plus de points !',
+      };
+      $('help').textContent = HELP[st.c];
+      const tk = ++token;
+      $('out').innerHTML = '<p class="muted center">Chargement…</p>';
+      if (!O.enabled) { $('out').innerHTML = '<p class="center">Serveur injoignable pour le moment.</p>'; return; }
+      try {
+        let h;
+        if (st.c === 'rarete') h = await rarity();
+        else {
+          const game = st.c === 'general' ? null : st.c === 'jour' ? st.daily : arcadeId();
+          const rows = await O.leaderboard(game, st.period, 50);
+          h = (st.c === 'arcade' ? `<h3 class="center" style="margin-top:0">${L.GAME_NAMES[game] || game}</h3>` : '') + table(rows, st.c);
+        }
+        if (tk === token) $('out').innerHTML = h;
+      } catch (e) { if (tk === token) $('out').innerHTML = `<p class="center err">⚠️ ${esc(e.message)}</p>`; }
+    }
+
+    function me() {
+      $('me').innerHTML = O.user && O.profile
+        ? (l => `<span class="level">${l.icon} ${esc(O.profile.pseudo)} · ${l.name} · ${O.points} pts</span>`)(L.levelOf(O.points))
+        : '<span class="rank-banner">👤 <a href="profil.html">Connecte-toi ou crée un compte</a> pour apparaître dans les classements</span>';
+    }
+    document.querySelectorAll('#cats .tab').forEach(b => b.onclick = () => { st.c = b.dataset.c; save(); render(); });
+    O.onChange(() => { me(); render(); });
+    O.ready.then(() => { me(); render(); });
+  })();
+  </script>
+</body>
+</html>

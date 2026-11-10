@@ -20,8 +20,10 @@
         <button class="tab" data-kind="illimite">♾️ Illimité</button>
       </div>
       <button class="btn small" id="newq4">🔁 Nouvelle grille</button>
+      <button class="btn ghost small" id="hier">📜 Solution d'hier</button>
       <label class="toggle" id="forms-opt"><input type="checkbox" id="forms"> Inclure les formes (régionales, Méga…)</label>
     </div>
+    <div id="rank" class="center" style="margin-bottom:12px"></div>
     <div class="q4">
       <div id="solved"></div>
       <div class="q4-grid" id="grid"></div>
@@ -37,6 +39,9 @@
   </main>
   <script src="assets/js/data.js"></script>
   <script src="assets/js/common.js"></script>
+  <script src="assets/js/logic.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/online.js"></script>
   <script src="assets/js/categories.js"></script>
   <script src="assets/js/pages/4par4.js"></script>
 </body>

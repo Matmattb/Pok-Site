@@ -14,6 +14,7 @@
       <h1>⚖️ Plus ou Moins</h1>
       <p>Le Pokémon de droite a-t-il une valeur plus haute ou plus basse que celui de gauche ? En cas d'égalité, les deux réponses sont bonnes.</p>
     </div>
+    <div id="rank" class="center" style="margin-bottom:12px"></div>
     <div class="tabs" id="crit" style="justify-content:center"></div>
     <div class="flex center"><span class="pill counter">Série : <b id="score">0</b></span><span class="pill counter">Record : <b id="best">0</b></span></div>
     <div class="hl-wrap mt">
@@ -24,9 +25,13 @@
   </main>
   <script src="assets/js/data.js"></script>
   <script src="assets/js/common.js"></script>
+  <script src="assets/js/logic.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/online.js"></script>
   <script>
   (function () {
-    const { P, art, typesHtml, fmtH, fmtW, bst, store, pick, confetti } = PK;
+    const { P, art, typesHtml, fmtH, fmtW, bst, store, pick, confetti, L } = PK;
+    const O = PK.online;
     const $ = id => document.getElementById(id);
     const CRITS = {
       poids: { label: '⚖️ Poids', q: 'plus lourd', v: p => p.w, f: fmtW },
@@ -35,7 +40,7 @@
       vitesse: { label: '💨 Vitesse', q: 'plus rapide', v: p => p.st[5], f: v => v },
       attaque: { label: '⚔️ Attaque', q: 'plus d\'Attaque', v: p => p.st[1], f: v => v },
     };
-    let crit = store.get('hl:crit', 'poids'), score = 0, A, B, busy = false;
+    let crit = store.get('hl:crit', 'poids'), score = 0, A, B, busy = false, G = null;
     const C = () => CRITS[crit];
     $('crit').innerHTML = Object.entries(CRITS).map(([k, c]) => `<button class="tab" data-k="${k}">${c.label}</button>`).join('');
     $('crit').querySelectorAll('.tab').forEach(b => b.onclick = () => { crit = b.dataset.k; store.set('hl:crit', crit); start(); });
@@ -52,22 +57,30 @@
       $('score').textContent = score; $('best').textContent = best();
       $('crit').querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.k === crit));
     }
-    function other(p) { let q; do { q = pick(P); } while (q.id === p.id); return q; }
-    function start() { score = 0; A = pick(P); B = other(A); draw(); }
+    // tirage identique à celui du serveur, qui rejoue la partie pour vérifier la série
+    const other = p => L.hlOther(p, G.r);
+    async function start() {
+      score = 0; busy = true;
+      $('crit').querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.k === crit));
+      const g = await O.arcade('hl', { crit });
+      G = g; A = pick(P, G.r); B = other(A); busy = false; draw();
+    }
     function answer(dir) {
       if (busy) return; busy = true;
-      const a = C().v(A), b = C().v(B);
-      const ok = a === b || (dir > 0 ? b > a : b < a);
+      G.answers.push(dir);
+      const ok = L.hlCorrect(crit, A, B, dir);
       $('right').innerHTML = card(B, true) + `<h3>${ok ? '✅ Correct !' : '❌ Raté !'}</h3>`;
       if (ok) {
         score++; if (score > best()) store.set('hl:best:' + crit, score);
         if (score % 10 === 0) confetti(40);
         setTimeout(() => { A = B; B = other(A); busy = false; draw(); }, 1100);
       } else {
-        $('right').insertAdjacentHTML('beforeend', `<p>Série finale : <b>${score}</b></p><button class="btn" id="re">🔁 Rejouer</button>`);
+        $('right').insertAdjacentHTML('beforeend', `<p>Série finale : <b>${score}</b></p><div id="end"></div><button class="btn" id="re">🔁 Rejouer</button>`);
         $('re').onclick = () => { busy = false; start(); };
+        const g = G; O.arcadeEnd(g).then(end => { if ($('end') && g === G) $('end').innerHTML = O.endHtml(end, 'hl-' + crit); });
       }
     }
+    O.rankBanner($('rank'));
     start();
   })();
   </script>

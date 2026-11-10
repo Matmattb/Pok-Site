@@ -1,0 +1,6 @@
+project_id = "tzguwsmjfzfrghldogcn"
+
+[functions.jeu]
+# Les invités peuvent aussi jouer aux défis du jour (sans être classés) :
+# l'identité est vérifiée dans la fonction elle-même quand un jeton est présent.
+verify_jwt = false

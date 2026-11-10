@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mon compte — PokéMonde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main class="game-wrap">
+    <div id="app"><p class="center muted mt">Chargement…</p></div>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/logic.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+  <script src="assets/js/online.js"></script>
+  <script>
+  (function () {
+    const { byId, sprite, art, toast, L, P } = PK;
+    const O = PK.online;
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    let tab = location.hash === '#inscription' ? 'up' : 'in';
+
+    /* ---------- Pas connecté : connexion / inscription ---------- */
+    function renderAuth() {
+      if (!O.enabled) { $('app').innerHTML = '<div class="card center"><h2>Serveur injoignable</h2><p>La connexion aux comptes est impossible pour le moment (bloqueur de publicité ? pas d\'internet ?). Les jeux restent jouables sans compte.</p></div>'; return; }
+      const T = (k, l) => `<button class="tab ${tab === k ? 'active' : ''}" data-t="${k}">${l}</button>`;
+      let form = '';
+      if (tab === 'in') form = `<form class="form" id="f">
+          <label>E-mail<input type="email" id="email" required autocomplete="email"></label>
+          <label>Mot de passe<input type="password" id="pw" required autocomplete="current-password"></label>
+          <p class="err" id="err"></p>
+          <button class="btn" type="submit">Se connecter</button>
+          <p class="center"><a href="#" id="forgot">Mot de passe oublié ?</a></p></form>`;
+      if (tab === 'up') form = `<form class="form" id="f">
+          <label>Pseudo <small>visible dans les classements · 3 à 20 caractères (lettres, chiffres, . _ -) · pas ton vrai nom !</small><input type="text" id="pseudo" required maxlength="20" autocomplete="nickname"></label>
+          <span id="pseudo-ok"></span>
+          <label>E-mail <small>jamais affiché, sert seulement à te connecter</small><input type="email" id="email" required autocomplete="email"></label>
+          <label>Mot de passe <small>8 caractères minimum</small><input type="password" id="pw" required minlength="8" autocomplete="new-password"></label>
+          <label class="check"><input type="checkbox" id="cgu" required> <span>J'ai lu la <a href="confidentialite.html" target="_blank">page Confidentialité</a>. Si j'ai moins de 15 ans, un parent est d'accord pour que je crée ce compte.</span></label>
+          <p class="err" id="err"></p>
+          <button class="btn" type="submit">Créer mon compte</button></form>`;
+      if (tab === 'reset') form = `<form class="form" id="f">
+          <p>Indique l'e-mail de ton compte : tu recevras un lien pour choisir un nouveau mot de passe.</p>
+          <label>E-mail<input type="email" id="email" required autocomplete="email"></label>
+          <p class="err" id="err"></p>
+          <button class="btn" type="submit">Envoyer le lien</button></form>`;
+      $('app').innerHTML = `<div class="page-head"><h1>👤 Mon compte</h1><p>Un compte gratuit pour enregistrer tes scores, gagner des niveaux de dresseur et apparaître dans les <a href="classements.html">classements</a>. Les jeux restent jouables sans compte.</p></div>
+        <div class="tabs" style="justify-content:center">${T('in', 'Connexion')}${T('up', 'Créer un compte')}</div>
+        <div class="card">${form}</div>`;
+      document.querySelectorAll('.tab[data-t]').forEach(b => b.onclick = () => { tab = b.dataset.t; renderAuth(); });
+      $('forgot') && ($('forgot').onclick = e => { e.preventDefault(); tab = 'reset'; renderAuth(); });
+      const err = m => { $('err').textContent = m || ''; };
+      if ($('pseudo')) $('pseudo').onblur = async () => {
+        const p = $('pseudo').value.trim(); if (!p) return;
+        if (!O.PSEUDO_RE.test(p)) return ($('pseudo-ok').innerHTML = '<span class="err">Pseudo invalide (3 à 20 caractères : lettres, chiffres, . _ -)</span>');
+        try { $('pseudo-ok').innerHTML = (await O.pseudoAvailable(p)) ? '<span class="ok">✅ Pseudo disponible</span>' : '<span class="err">❌ Pseudo déjà pris</span>'; } catch (e) { $('pseudo-ok').innerHTML = ''; }
+      };
+      $('f').onsubmit = async e => {
+        e.preventDefault(); err('');
+        const btn = $('f').querySelector('button[type=submit]'); btn.disabled = true;
+        try {
+          const email = $('email').value.trim();
+          if (tab === 'in') await O.signIn(email, $('pw').value);
+          if (tab === 'up') {
+            const pseudo = $('pseudo').value.trim();
+            if (!O.PSEUDO_RE.test(pseudo)) throw new Error('Pseudo invalide : 3 à 20 caractères (lettres, chiffres, . _ -).');
+            if (!(await O.pseudoAvailable(pseudo))) throw new Error('Ce pseudo est déjà pris.');
+            const r = await O.signUp(email, $('pw').value, pseudo);
+            if (r.needsConfirm) { $('app').querySelector('.card').innerHTML = '<h2>📧 Vérifie tes e-mails</h2><p>Clique sur le lien reçu pour activer ton compte (pense à regarder dans les spams).</p>'; return; }
+            toast('🎉 Compte créé, bienvenue !');
+          }
+          if (tab === 'reset') { await O.resetPassword(email); $('app').querySelector('.card').innerHTML = '<h2>📧 E-mail envoyé</h2><p>Si un compte existe avec cette adresse, tu vas recevoir un lien (regarde aussi dans les spams).</p>'; return; }
+        } catch (e2) { err(O.frError(e2)); } finally { btn.disabled = false; }
+      };
+    }
+
+    function renderRecovery() {
+      $('app').innerHTML = `<div class="page-head"><h1>🔑 Nouveau mot de passe</h1></div><div class="card"><form class="form" id="f">
+        <label>Nouveau mot de passe <small>8 caractères minimum</small><input type="password" id="pw" required minlength="8" autocomplete="new-password"></label>
+        <p class="err" id="err"></p><button class="btn" type="submit">Enregistrer</button></form></div>`;
+      $('f').onsubmit = async e => {
+        e.preventDefault();
+        try { await O.setPassword($('pw').value); toast('✅ Mot de passe changé'); render(); } catch (e2) { $('err').textContent = e2.message; }
+      };
+    }
+
+    /* ---------- Connecté : profil ---------- */
+    async function renderProfile() {
+      const p = O.profile;
+      if (!p) { $('app').innerHTML = '<p class="center muted mt">Chargement du profil…</p>'; return; }
+      const lv = L.levelOf(O.points);
+      $('app').innerHTML = `<div class="card profile-head">
+          <div class="center"><img class="big" src="${art(p.avatar)}" alt=""><br><button class="btn ghost small" id="ch-avatar">🖼️ Changer d'avatar</button></div>
+          <div>
+            <h1 style="margin:0">${esc(p.pseudo)} <button class="btn ghost small" id="ch-pseudo" title="Changer de pseudo">✏️</button></h1>
+            <p class="muted" style="margin:.2em 0 .6em">Dresseur depuis le ${new Date(p.created_at).toLocaleDateString('fr-FR')}</p>
+            <span class="level">${lv.icon} ${lv.name}</span>
+            <p style="margin:.6em 0 0"><b>${O.points}</b> points${lv.next ? ` · encore <b>${lv.next - O.points}</b> pour devenir <b>${lv.nextName}</b>` : ' · niveau maximum !'}</p>
+            <div class="progress"><i style="width:${Math.round(lv.progress * 100)}%"></i></div>
+            <div class="flex"><a class="btn small" href="classements.html">🏆 Classements</a><button class="btn ghost small" id="logout">🚪 Se déconnecter</button></div>
+          </div></div>
+        <div class="card mt"><h2>📊 Mes jeux</h2><div id="stats"><p class="muted">Chargement…</p></div></div>
+        <div class="card mt"><h2>🕓 Dernières parties</h2><div id="hist"></div></div>
+        <div class="card mt"><h2>⚙️ Compte</h2>
+          <p class="muted">E-mail : ${esc(O.user.email)} (jamais affiché publiquement)</p>
+          <div class="flex"><button class="btn ghost small" id="ch-pw">🔑 Changer de mot de passe</button><button class="btn red small" id="del">🗑️ Supprimer mon compte</button></div></div>`;
+      $('logout').onclick = async () => { await O.signOut(); toast('À bientôt !'); };
+      $('ch-avatar').onclick = chooseAvatar;
+      $('ch-pseudo').onclick = changePseudo;
+      $('ch-pw').onclick = renderRecovery;
+      $('del').onclick = deleteAccount;
+      try { renderStats(await O.myResults()); } catch (e) { $('stats').innerHTML = `<p class="err">${e.message}</p>`; }
+    }
+
+    function renderStats(res) {
+      if (!res.length) { $('stats').innerHTML = '<p>Pas encore de partie classée. Lance un <a href="jeu-pokedle.html">Pokédle du jour</a> !</p>'; $('hist').innerHTML = ''; return; }
+      const by = {};
+      res.forEach(r => { const g = by[r.game] = by[r.game] || { n: 0, pts: 0, best: null, kind: r.kind }; g.n++; g.pts += r.points; if (!g.best || r.score > g.best.score) g.best = r; });
+      const rows = Object.entries(by).sort((a, b) => b[1].pts - a[1].pts);
+      $('stats').innerHTML = `<table class="board"><tr><th>Jeu</th><th>Parties</th><th>Meilleur</th><th style="text-align:right">Points</th></tr>
+        ${rows.map(([g, s]) => `<tr><td><a href="classements.html?jeu=${g}">${L.GAME_NAMES[g] || g}</a></td><td>${s.n}${s.kind === 'jour' ? ' jour' + (s.n > 1 ? 's' : '') : ''}</td><td>${esc(s.best.label || s.best.score)}</td><td class="val">${s.pts}</td></tr>`).join('')}</table>`;
+      $('hist').innerHTML = `<table class="board">${res.slice(0, 25).map(r => `<tr><td>${new Date(r.day + 'T12:00').toLocaleDateString('fr-FR')}</td><td>${L.GAME_NAMES[r.game] || r.game}</td><td>${esc(r.label || r.score)}</td><td class="val">+${r.points}</td></tr>`).join('')}</table>`;
+    }
+
+    function chooseAvatar() {
+      const m = PK.modal(`<h2>Choisis ton avatar</h2><div id="apick"></div><p class="muted mt">N'importe quel Pokémon !</p>`);
+      const pk = PK.picker(m.el.querySelector('#apick'), {
+        pool: () => P,
+        exclude: () => new Set(),
+        onPick: async p => { m.close(); try { await O.updateProfile({ avatar: p.id }); toast('✅ Nouvel avatar : ' + p.n); } catch (e) { toast(e.message); } },
+      });
+      setTimeout(() => pk.focus(), 50);
+    }
+    async function changePseudo() {
+      const p = (prompt('Nouveau pseudo (3 à 20 caractères : lettres, chiffres, . _ -)', O.profile.pseudo) || '').trim();
+      if (!p || p === O.profile.pseudo) return;
+      if (!O.PSEUDO_RE.test(p)) return toast('Pseudo invalide');
+      try { await O.updateProfile({ pseudo: p }); toast('✅ Pseudo changé'); } catch (e) { toast(e.message); }
+    }
+    async function deleteAccount() {
+      const p = prompt(`Supprimer définitivement ton compte, tes scores et tes classements ?\nCette action est irréversible.\n\nTape ton pseudo (${O.profile.pseudo}) pour confirmer :`);
+      if (p === null) return;
+      if (p.trim() !== O.profile.pseudo) return toast('Pseudo incorrect, rien n\'a été supprimé');
+      try { await O.deleteAccount(); toast('Compte supprimé. Au revoir !'); } catch (e) { toast(e.message); }
+    }
+
+    function render() {
+      if (O.recovery && O.user) return renderRecovery();
+      if (O.user) return renderProfile();
+      renderAuth();
+    }
+    O.onChange(render);
+    O.ready.then(render);
+  })();
+  </script>
+</body>
+</html>

@@ -45,3 +45,16 @@ et sont stockées dans `outils/desc-pokepedia.json`.
 node outils/fetch-desc-pokepedia.mjs            # (facultatif) récupère les descriptions manquantes
 node outils/build-data.mjs <dossier_contenant_les_csv>
 ```
+
+## Comptes et classements (Supabase)
+
+- Connexion e-mail + mot de passe (`profil.html`), classements (`classements.html`), page `confidentialite.html`.
+- `assets/js/online.js` : client Supabase (clé **publique** uniquement). `assets/js/logic.js` : règles partagées entre le site et le serveur.
+- Les scores ne sont jamais écrits par le navigateur : la fonction serveur `supabase/functions/jeu` garde les réponses des défis du jour secrètes et rejoue les parties d'arcade avant d'enregistrer un score.
+- Base : `supabase/migrations/*.sql`.
+- Redéployer le serveur après avoir modifié `data.js`, `common.js`, `categories.js` ou `logic.js` :
+  ```
+  node outils/sync-serveur.mjs
+  npx supabase functions deploy jeu --project-ref tzguwsmjfzfrghldogcn --use-api --no-verify-jwt
+  ```
+- Ne jamais mettre la clé `service_role`/secrète ni le mot de passe de la base dans le dépôt.

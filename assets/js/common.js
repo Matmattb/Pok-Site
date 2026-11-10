@@ -57,8 +57,10 @@
     };
   }
   function hashStr(s) { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
-  const todayKey = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
-  const dailyRng = salt => rng(hashStr(todayKey() + ':' + salt));
+  // Le « jour » des défis est celui de Paris, pour que tout le monde (et le serveur) ait le même défi
+  const PARIS = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' });
+  const todayKey = () => PARIS.format(new Date());
+  const dailyRng = (salt, day = todayKey()) => rng(hashStr(day + ':' + salt));
   const pick = (arr, r = Math.random) => arr[Math.floor(r() * arr.length)];
   function shuffle(arr, r = Math.random) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
@@ -173,24 +175,28 @@
         </div>
         ${a('types.html', 'Types')}
         ${a('equipe.html', 'Équipe')}
+        ${a('classements.html', '🏆 Classements')}
+        <a href="profil.html" id="nav-account" class="${here === 'profil.html' ? 'active' : ''}">👤 Connexion</a>
       </div></nav>`;
     document.body.prepend(h);
     h.querySelector('.burger').onclick = () => h.querySelector('.nav-links').classList.toggle('open');
     h.querySelector('.nav-drop > button').onclick = e => e.currentTarget.parentElement.classList.toggle('open');
     const f = document.createElement('footer');
     f.className = 'site-footer';
-    f.innerHTML = `PokéMonde — site de fans non officiel. Pokémon © Nintendo / Creatures Inc. / GAME FREAK inc.<br>Données et images : <a href="https://pokeapi.co" target="_blank" rel="noopener">PokéAPI</a> · descriptions des générations 8-9 : <a href="https://www.pokepedia.fr" target="_blank" rel="noopener">Poképédia</a> (CC BY-NC-SA).`;
+    f.innerHTML = `PokéMonde — site de fans non officiel. Pokémon © Nintendo / Creatures Inc. / GAME FREAK inc. · <a href="confidentialite.html">Confidentialité</a><br>Données et images : <a href="https://pokeapi.co" target="_blank" rel="noopener">PokéAPI</a> · descriptions des générations 8-9 : <a href="https://www.pokepedia.fr" target="_blank" rel="noopener">Poképédia</a> (CC BY-NC-SA).`;
     document.body.appendChild(f);
   }
-  document.addEventListener('DOMContentLoaded', header);
-
-  // Si une petite image n'existe pas (certaines formes récentes), on utilise l'illustration officielle
-  document.addEventListener('error', e => {
-    const img = e.target;
-    if (img.tagName === 'IMG' && img.src.startsWith(SPR) && !img.src.includes('/other/') && !img.dataset.fb) {
-      img.dataset.fb = 1; img.src = art(img.src.split('/').pop().replace('.png', ''));
-    }
-  }, true);
+  // (ce fichier est aussi chargé par le serveur de vérification, où il n'y a pas de page)
+  if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', header);
+    // Si une petite image n'existe pas (certaines formes récentes), on utilise l'illustration officielle
+    document.addEventListener('error', e => {
+      const img = e.target;
+      if (img.tagName === 'IMG' && img.src.startsWith(SPR) && !img.src.includes('/other/') && !img.dataset.fb) {
+        img.dataset.fb = 1; img.src = art(img.src.split('/').pop().replace('.png', ''));
+      }
+    }, true);
+  }
 
   window.PK = {
     D, P, F, GF, ALL, formsOf, speciesOf, FORM_LABEL, byId, GEN_NAMES, STAT_NAMES, REG_NAMES, GAMES,
