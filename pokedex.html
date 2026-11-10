@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pokédex — PokéMonde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main>
+    <div class="page-head">
+      <h1>📖 Pokédex national</h1>
+      <p>Les 1025 Pokémon, de Bulbizarre à Pêchaminus. Clique sur un Pokémon pour voir sa fiche complète.</p>
+    </div>
+    <div class="dex-filters card">
+      <input type="search" id="q" placeholder="Rechercher par nom ou numéro…">
+      <select id="type"><option value="">Tous les types</option></select>
+      <select id="gen"><option value="">Toutes les générations</option></select>
+      <select id="cat">
+        <option value="">Toutes les catégories</option>
+        <option value="leg">Légendaires</option>
+        <option value="myth">Fabuleux</option>
+        <option value="baby">Bébés</option>
+        <option value="starter">Lignées de starter</option>
+        <option value="pseudo">Pseudo-légendaires</option>
+        <option value="ultra">Ultra-Chimères</option>
+        <option value="paradox">Paradoxes</option>
+        <option value="fossil">Fossiles</option>
+        <option value="mega">Méga-Évolutions</option>
+        <option value="gmax">Gigamax</option>
+        <option value="reg">Formes régionales</option>
+      </select>
+      <select id="sort">
+        <option value="id">Tri : numéro</option>
+        <option value="n">Tri : nom</option>
+        <option value="bst">Tri : total des stats</option>
+        <option value="w">Tri : poids</option>
+        <option value="h">Tri : taille</option>
+      </select>
+      <label class="toggle"><input type="checkbox" id="forms"> Afficher les formes (régionales, Méga, Gigamax…)</label>
+    </div>
+    <p class="muted" id="count"></p>
+    <div class="dex-grid" id="grid"></div>
+    <div class="center mt"><button class="btn ghost" id="more">Afficher plus</button></div>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+  (function () {
+    const { P, F, D, art, typesHtml, num, norm, bst, has, GEN_NAMES } = PK;
+    const $ = id => document.getElementById(id);
+    D.types.forEach(t => $('type').insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.name}</option>`));
+    for (let g = 1; g <= 9; g++) $('gen').insertAdjacentHTML('beforeend', `<option value="${g}">Génération ${g} — ${GEN_NAMES[g]}</option>`);
+    const saved = PK.store.get('dexFilters', {});
+    ['q', 'type', 'gen', 'cat', 'sort'].forEach(k => { if (saved[k] != null) $(k).value = saved[k]; });
+    $('forms').checked = !!saved.forms;
+    let list = [], shown = 0;
+    const STEP = 120;
+    // Catégorie appliquée à une forme : la forme elle-même (ex. « Méga-Évolutions » -> les Méga) ou héritée de l'espèce
+    const catOk = (p, c) => {
+      if (p.form) {
+        if (c === 'mega') return p.k === 'mega' || p.k === 'primal';
+        if (c === 'gmax') return p.k === 'gmax';
+        if (c === 'reg') return p.k === 'reg';
+        return has(p, c);
+      }
+      return c === 'reg' ? p.reg.length : has(p, c);
+    };
+    function apply() {
+      const q = norm($('q').value), t = +$('type').value, g = +$('gen').value, c = $('cat').value, s = $('sort').value, withForms = $('forms').checked;
+      PK.store.set('dexFilters', { q: $('q').value, type: $('type').value, gen: $('gen').value, cat: $('cat').value, sort: s, forms: withForms });
+      const pool = withForms ? P.concat(F) : P;
+      list = pool.filter(p =>
+        (!q || p._n.includes(q) || p._en.includes(q) || String(p.sp || p.id) === q.replace(/^0+/, '')) &&
+        (!t || p.t.includes(t)) && (!g || p.gen === g) &&
+        (!c || catOk(p, c)));
+      const key = { id: p => (p.sp || p.id) + (p.form ? p.id / 1e6 : 0), n: p => p.n, bst: p => -bst(p), w: p => -p.w, h: p => -p.h }[s];
+      list.sort((a, b) => { const x = key(a), y = key(b); return typeof x === 'string' ? x.localeCompare(y, 'fr') : x - y; });
+      $('count').textContent = list.length + ' Pokémon';
+      $('grid').innerHTML = ''; shown = 0; more();
+    }
+    function more() {
+      $('grid').insertAdjacentHTML('beforeend', list.slice(shown, shown + STEP).map(p => `
+        <a class="dex-card" href="pokemon.html?id=${p.id}">
+          <span class="num">${num(p.id)}</span>${p.form ? '<span class="form-tag">forme</span>' : ''}
+          <img src="${art(p.id)}" alt="${p.n}" loading="lazy">
+          <h3>${p.n}</h3><div class="types">${typesHtml(p)}</div>
+        </a>`).join(''));
+      shown += STEP;
+      $('more').style.display = shown < list.length ? '' : 'none';
+    }
+    ['q', 'type', 'gen', 'cat', 'sort', 'forms'].forEach(k => $(k).addEventListener('input', apply));
+    $('forms').addEventListener('change', apply);
+    $('more').onclick = more;
+    new IntersectionObserver(e => { if (e[0].isIntersecting && shown < list.length) more(); }, { rootMargin: '400px' }).observe($('more'));
+    apply();
+  })();
+  </script>
+</body>
+</html>

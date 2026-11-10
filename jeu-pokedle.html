@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pokédle — PokéMonde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main class="game-wrap">
+    <div class="page-head">
+      <h1>🔎 Pokédle</h1>
+      <p>Devine le Pokémon mystère ! Chaque essai te donne des indices. Défi du jour (le même pour tout le monde) ou mode illimité. En illimité, tu peux aussi inclure les formes (Raichu d'Alola, Méga-Évolutions…) : elles ont leurs propres types, taille, poids et génération d'apparition.</p>
+    </div>
+    <div class="tabs" id="modes" style="justify-content:center">
+      <button class="tab" data-mode="classique">🧩 Classique</button>
+      <button class="tab" data-mode="silhouette">👤 Silhouette</button>
+      <button class="tab" data-mode="description">📜 Description</button>
+      <button class="tab" data-mode="cri">🔊 Cri</button>
+    </div>
+    <div class="game-bar">
+      <div class="tabs" id="kinds" style="margin:0">
+        <button class="tab" data-kind="jour">📅 Du jour</button>
+        <button class="tab" data-kind="illimite">♾️ Illimité</button>
+      </div>
+    </div>
+    <div id="gens" class="flex center" style="margin-bottom:14px"></div>
+    <div class="card" id="clue"></div>
+    <div class="mt" id="pick"></div>
+    <div class="flex center mt" id="actions"></div>
+    <div id="result"></div>
+    <div id="board" class="mt"></div>
+    <p class="help mt" id="rules"></p>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/data-desc.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/pages/pokedle.js"></script>
+</body>
+</html>

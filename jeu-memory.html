@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Memory — PokéMonde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main class="game-wrap">
+    <div class="page-head">
+      <h1>🃏 Memory Pokémon</h1>
+      <p>Retourne les cartes deux par deux et retrouve toutes les paires en un minimum de coups.</p>
+    </div>
+    <div class="game-bar">
+      <select id="size"><option value="6">Facile — 6 paires</option><option value="8" selected>Normal — 8 paires</option><option value="12">Difficile — 12 paires</option><option value="18">Expert — 18 paires</option></select>
+      <button class="btn small" id="new">🔁 Nouvelle partie</button>
+      <span class="pill">Coups : <b id="moves">0</b></span><span class="pill">⏱️ <b id="time">0</b> s</span><span class="pill">Record : <b id="best">–</b></span>
+    </div>
+    <div class="mem-grid" id="grid"></div>
+    <div id="result"></div>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+  (function () {
+    const { P, art, byId, shuffle, store, confetti } = PK;
+    const $ = id => document.getElementById(id);
+    let cards, open, found, moves, t0, timer, lock;
+    $('size').value = store.get('mem:size', '8');
+    function start() {
+      const n = +$('size').value; store.set('mem:size', String(n));
+      const mons = shuffle(P).slice(0, n);
+      cards = shuffle(mons.concat(mons).map(p => p.id));
+      open = []; found = new Set(); moves = 0; lock = false; t0 = 0; clearInterval(timer);
+      $('moves').textContent = 0; $('time').textContent = 0; $('result').innerHTML = '';
+      const b = store.get('mem:best:' + n, null); $('best').textContent = b ? b + ' coups' : '–';
+      const cols = n <= 6 ? 4 : n <= 8 ? 4 : 6;
+      $('grid').style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      $('grid').innerHTML = cards.map((id, i) => `<div class="mem-card" data-i="${i}"><div class="mem-back"></div><div class="mem-front"><img src="${art(id)}" alt="" loading="eager"></div></div>`).join('');
+      $('grid').querySelectorAll('.mem-card').forEach(c => c.onclick = () => flip(+c.dataset.i, c));
+    }
+    function flip(i, el) {
+      if (lock || found.has(i) || open.some(o => o.i === i)) return;
+      if (!t0) { t0 = Date.now(); timer = setInterval(() => $('time').textContent = Math.floor((Date.now() - t0) / 1000), 500); }
+      el.classList.add('flip'); open.push({ i, el });
+      if (open.length < 2) return;
+      moves++; $('moves').textContent = moves;
+      const [a, b] = open;
+      if (cards[a.i] === cards[b.i]) {
+        found.add(a.i); found.add(b.i); a.el.classList.add('found'); b.el.classList.add('found'); open = [];
+        if (found.size === cards.length) win();
+      } else {
+        lock = true;
+        setTimeout(() => { a.el.classList.remove('flip'); b.el.classList.remove('flip'); open = []; lock = false; }, 800);
+      }
+    }
+    function win() {
+      clearInterval(timer); confetti();
+      const n = +$('size').value, key = 'mem:best:' + n, b = store.get(key, null);
+      if (!b || moves < b) store.set(key, moves);
+      $('result').innerHTML = `<div class="card result-box"><h2>🎉 Bravo !</h2><p>${n} paires en <b>${moves}</b> coups et <b>${Math.floor((Date.now() - t0) / 1000)}</b> s.</p><button class="btn" id="again">🔁 Rejouer</button></div>`;
+      $('again').onclick = start;
+    }
+    $('new').onclick = start; $('size').onchange = start;
+    start();
+  })();
+  </script>
+</body>
+</html>

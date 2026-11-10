@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fiche Pokémon — PokéMonde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main id="main"></main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/data-desc.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+  (function () {
+    const { P, D, byId, art, artShiny, sprite, cry, typesHtml, num, fmtH, fmtW, bst, has, effOn, chainOf, formsOf, FORM_LABEL, STAT_NAMES, GEN_NAMES, REG_NAMES } = PK;
+    const raw = parseInt(new URLSearchParams(location.search).get('id')) || 1;
+    const p = byId[raw] || byId[1];          // peut être une espèce ou une forme
+    const sp = byId[p.sp || p.id];            // l'espèce correspondante
+    document.title = p.n + ' — PokéMonde';
+    const prev = byId[sp.id - 1], next = byId[sp.id + 1];
+    const mainType = PK.type(p.t[0]);
+
+    const statColor = v => v < 50 ? '#e74c3c' : v < 80 ? '#f39c12' : v < 110 ? '#f1c40f' : v < 140 ? '#2ecc71' : '#1abc9c';
+    const stats = p.st.map((v, i) => `<div class="statbar"><span>${STAT_NAMES[i]}</span><b>${v}</b><div class="bar"><i style="width:${Math.min(100, v / 2.0)}%;background:${statColor(v)}"></i></div></div>`).join('')
+      + `<div class="statbar"><span>Total</span><b>${bst(p)}</b><div></div></div>`;
+
+    // Faiblesses défensives
+    const mult = D.types.map(t => ({ t: t.id, m: effOn(t.id, p.t) }));
+    const groupW = (label, f) => {
+      const l = mult.filter(f);
+      return l.length ? `<h4>${label}</h4><div class="weak-grid">${l.map(x => `<span class="type" style="background:${PK.type(x.t).color}">${PK.type(x.t).name}<b>×${String(x.m).replace('.', ',')}</b></span>`).join('')}</div>` : '';
+    };
+
+    // Formes de l'espèce
+    const forms = [sp].concat(formsOf(sp.id));
+    const formsHtml = forms.length > 1 ? `<div class="card mt"><h2>🔀 Formes</h2><div class="form-chips">${forms.map(f => `
+      <a class="form-chip${f.id === p.id ? ' cur' : ''}" href="pokemon.html?id=${f.id}"><img src="${sprite(f.id)}" alt="" loading="lazy">${f.form ? f.n : sp.n + '<br><span class="muted">(normale)</span>'}</a>`).join('')}</div></div>` : '';
+
+    // Lignée évolutive : pour une forme régionale, on montre les formes de la même région quand elles existent
+    const rg = p.form && p.k === 'reg' ? p.rg : '';
+    const variant = x => {
+      if (rg) { const v = formsOf(x.id).find(f => f.k === 'reg' && f.rg === rg && !/Transe/.test(f.n)); if (v) return v; }
+      return x;
+    };
+    const chain = chainOf(sp);
+    const stages = [1, 2, 3].map(s => chain.filter(x => x.stg === s).map(variant)).filter(l => l.length);
+    // si un Pokémon n'évolue que depuis une forme régionale (ex. Palarticho), on affiche aussi cette forme
+    if (!rg) chain.forEach(x => {
+      if (x.pre && !byId[x.pre].evo) {
+        const st = stages[x.stg - 2];
+        formsOf(x.pre).filter(f => f.evo && f.k === 'reg').forEach(f => { if (st && !st.includes(f)) st.push(f); });
+      }
+    });
+    const evo = chain.length > 1 ? stages.map((l, i) => `
+      ${i ? '<div class="evo-arrow">➜</div>' : ''}
+      <div style="display:flex;flex-direction:column;gap:4px">${l.map(x => `<a href="pokemon.html?id=${x.id}"${x.id === p.id ? ' style="background:var(--surface-2)"' : ''}><img src="${sprite(x.id)}" alt=""><br><b>${x.n}</b>${x.em ? `<div class="evo-arrow">${x.em}</div>` : ''}</a>`).join('')}</div>`).join('')
+      : '<p class="muted">Ce Pokémon n\'évolue pas.</p>';
+
+    const tags = [];
+    if (p.form) tags.push('🔀 ' + (p.k === 'reg' ? 'Forme ' + REG_NAMES[p.rg] : FORM_LABEL[p.k]));
+    if (has(p, 'leg')) tags.push('👑 Légendaire');
+    if (has(p, 'myth')) tags.push('✨ Fabuleux');
+    if (has(p, 'baby')) tags.push('🍼 Bébé');
+    if (has(p, 'ultra')) tags.push('🌀 Ultra-Chimère');
+    if (has(p, 'paradox')) tags.push('⏳ Paradoxe');
+    if (has(p, 'fossil')) tags.push('🦴 Fossile');
+    if (has(p, 'starter')) tags.push('🌱 Lignée de starter');
+    if (has(p, 'pseudo')) tags.push('🐉 Pseudo-légendaire');
+    if (has(p, 'mega')) tags.push('💎 Possède une Méga-Évolution');
+    if (has(p, 'gmax')) tags.push('☁️ Possède une forme Gigamax');
+    p.reg.forEach(r => tags.push('🗺️ Possède une forme ' + REG_NAMES[r]));
+
+    const desc = (window.PKDESC && PKDESC[sp.id]) || '';
+    document.getElementById('main').innerHTML = `
+      <div class="flex" style="justify-content:space-between;margin-bottom:14px">
+        ${prev ? `<a class="btn ghost small" href="pokemon.html?id=${prev.id}">← ${num(prev.id)} ${prev.n}</a>` : '<span></span>'}
+        <a class="btn ghost small" href="pokedex.html">Pokédex</a>
+        ${next ? `<a class="btn ghost small" href="pokemon.html?id=${next.id}">${next.n} ${num(next.id)} →</a>` : '<span></span>'}
+      </div>
+      <div class="poke-detail">
+        <div class="card poke-art">
+          <div class="bgcircle" style="background:${mainType.color}"></div>
+          <img id="art" src="${art(p.id)}" alt="${p.n}" style="position:relative">
+          <div class="flex center">
+            <button class="btn small" id="shiny">✨ Chromatique</button>
+            <button class="btn small blue" id="cry">🔊 Cri</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="muted"><b>${num(p.id)}</b> · ${p.form ? p.en : sp.en}</div>
+          <h1 style="margin:.1em 0">${p.n}</h1>
+          <div class="muted" style="margin-bottom:8px">${sp.g}</div>
+          <div>${typesHtml(p)}</div>
+          ${desc ? `<p style="font-style:italic">« ${desc} »${p.form ? ' <span class="muted">(description de l\'espèce)</span>' : ''}</p>` : ''}
+          <div class="flex" style="margin:10px 0">${tags.map(t => `<span class="pill">${t}</span>`).join('')}</div>
+          <div class="info-grid">
+            <div><small>Taille</small>${fmtH(p.h)}</div>
+            <div><small>Poids</small>${fmtW(p.w)}</div>
+            <div><small>${p.form ? 'Apparue en génération' : 'Génération'}</small>${p.gen} — ${GEN_NAMES[p.gen]}</div>
+            <div><small>Couleur</small>${D.colors[p.c - 1]}</div>
+            <div style="grid-column:span 2"><small>Talents</small>${p.ab.map(a => a.endsWith('*') ? `${a.slice(0, -1)} <span class="muted">(caché)</span>` : a).join(' · ')}</div>
+          </div>
+        </div>
+      </div>
+      ${formsHtml}
+      <div class="poke-detail mt">
+        <div class="card"><h2>📊 Statistiques de base</h2>${stats}</div>
+        <div class="card"><h2>🛡️ Faiblesses et résistances</h2>
+          ${groupW('Très vulnérable / vulnérable', x => x.m > 1)}
+          ${groupW('Résiste', x => x.m > 0 && x.m < 1)}
+          ${groupW('Immunisé', x => x.m === 0)}
+        </div>
+      </div>
+      <div class="card mt"><h2>🧬 Lignée évolutive</h2><div class="evo-line">${evo}</div></div>`;
+
+    let shiny = false;
+    document.getElementById('shiny').onclick = () => { shiny = !shiny; document.getElementById('art').src = shiny ? artShiny(p.id) : art(p.id); };
+    document.getElementById('cry').onclick = () => {
+      const play = id => { const a = new Audio(cry(id)); a.volume = .5; return a.play(); };
+      play(p.id).catch(() => (p.form ? play(sp.id) : Promise.reject()).catch(() => PK.toast('Cri indisponible sur ce navigateur')));
+    };
+  })();
+  </script>
+</body>
+</html>

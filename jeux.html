@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini-jeux — PokéMonde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main>
+    <div class="page-head">
+      <h1>🎮 Mini-jeux Pokémon</h1>
+      <p>Défis du jour ou parties illimitées : choisis ton jeu et deviens le meilleur dresseur !</p>
+    </div>
+    <div class="grid-games" id="games"></div>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+    document.getElementById('games').innerHTML = PK.GAMES.map(g => `
+      <a class="game-card" href="${g.href}"><div class="emoji">${g.emoji}</div><h3>${g.name}</h3><p>${g.desc}</p>
+      <img class="deco" src="${PK.art(g.deco)}" alt=""></a>`).join('');
+  </script>
+</body>
+</html>

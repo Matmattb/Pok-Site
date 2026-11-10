@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Table des types — PokéMonde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main>
+    <div class="page-head">
+      <h1>🔥 Table des types</h1>
+      <p>Lignes = type de l'attaque, colonnes = type du Pokémon qui défend. Survole une case pour la mettre en évidence.</p>
+    </div>
+    <div class="card">
+      <h2>🧮 Calculateur de faiblesses</h2>
+      <p class="muted">Choisis un ou deux types pour voir les dégâts reçus.</p>
+      <div class="flex"><select id="t1"></select><select id="t2"><option value="">— aucun —</option></select></div>
+      <div id="calc" class="mt"></div>
+    </div>
+    <div class="card mt type-table-wrap"><table class="type-table" id="table"></table>
+      <p class="center muted"><span class="type e2">×2</span> super efficace · <span class="type e05">×½</span> pas très efficace · <span class="type e0">×0</span> aucun effet</p>
+    </div>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+  (function () {
+    const { D, effOn } = PK;
+    const T = D.types;
+    let h = '<tr><th></th>' + T.map(t => `<th class="rot" data-c="${t.id}"><div style="background:${t.color}">${t.name}</div></th>`).join('') + '</tr>';
+    T.forEach(a => {
+      h += `<tr><th class="row" data-r="${a.id}" style="background:${a.color}">${a.name}</th>`;
+      T.forEach(d => {
+        const m = D.eff[a.id - 1][d.id - 1];
+        const cls = m === 0 ? 'e0' : m === .5 ? 'e05' : m === 2 ? 'e2' : 'e1';
+        h += `<td class="${cls}" data-r="${a.id}" data-c="${d.id}" title="${a.name} → ${d.name} : ×${m}">${m === 0 ? '0' : m === .5 ? '½' : m === 2 ? '2' : ''}</td>`;
+      });
+      h += '</tr>';
+    });
+    const table = document.getElementById('table');
+    table.innerHTML = h;
+    table.addEventListener('mouseover', e => {
+      const td = e.target.closest('td'); table.querySelectorAll('.hl').forEach(x => x.classList.remove('hl'));
+      if (!td) return;
+      table.querySelectorAll(`[data-r="${td.dataset.r}"]:not(td),[data-c="${td.dataset.c}"]:not(td)`).forEach(x => x.classList.add('hl'));
+      td.classList.add('hl');
+    });
+
+    const t1 = document.getElementById('t1'), t2 = document.getElementById('t2');
+    T.forEach(t => { t1.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.name}</option>`); t2.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.name}</option>`); });
+    function calc() {
+      const def = [+t1.value].concat(t2.value && t2.value !== t1.value ? [+t2.value] : []);
+      const groups = [[4, 'Dégâts ×4'], [2, 'Dégâts ×2'], [1, 'Dégâts ×1'], [.5, 'Dégâts ×½'], [.25, 'Dégâts ×¼'], [0, 'Immunité']];
+      document.getElementById('calc').innerHTML = groups.map(([m, l]) => {
+        const ts = T.filter(t => effOn(t.id, def) === m);
+        return ts.length ? `<p><b>${l}</b> : ${ts.map(t => PK.typeBadge(t.id)).join(' ')}</p>` : '';
+      }).join('') + `<p class="muted">Exemples : ${PK.P.filter(p => p.t.length === def.length && def.every(d => p.t.includes(d))).slice(0, 8).map(p => `<a href="pokemon.html?id=${p.id}">${p.n}</a>`).join(', ') || 'aucun Pokémon avec cette combinaison'}</p>`;
+    }
+    t1.onchange = t2.onchange = calc; calc();
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plus ou Moins — PokéMonde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main class="game-wrap">
+    <div class="page-head">
+      <h1>⚖️ Plus ou Moins</h1>
+      <p>Le Pokémon de droite a-t-il une valeur plus haute ou plus basse que celui de gauche ? En cas d'égalité, les deux réponses sont bonnes.</p>
+    </div>
+    <div class="tabs" id="crit" style="justify-content:center"></div>
+    <div class="flex center"><span class="pill counter">Série : <b id="score">0</b></span><span class="pill counter">Record : <b id="best">0</b></span></div>
+    <div class="hl-wrap mt">
+      <div class="card hl-card" id="left"></div>
+      <div class="hl-vs">VS</div>
+      <div class="card hl-card" id="right"></div>
+    </div>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+  (function () {
+    const { P, art, typesHtml, fmtH, fmtW, bst, store, pick, confetti } = PK;
+    const $ = id => document.getElementById(id);
+    const CRITS = {
+      poids: { label: '⚖️ Poids', q: 'plus lourd', v: p => p.w, f: fmtW },
+      taille: { label: '📏 Taille', q: 'plus grand', v: p => p.h, f: fmtH },
+      stats: { label: '📊 Total des stats', q: 'plus fort', v: bst, f: v => v },
+      vitesse: { label: '💨 Vitesse', q: 'plus rapide', v: p => p.st[5], f: v => v },
+      attaque: { label: '⚔️ Attaque', q: 'plus d\'Attaque', v: p => p.st[1], f: v => v },
+    };
+    let crit = store.get('hl:crit', 'poids'), score = 0, A, B, busy = false;
+    const C = () => CRITS[crit];
+    $('crit').innerHTML = Object.entries(CRITS).map(([k, c]) => `<button class="tab" data-k="${k}">${c.label}</button>`).join('');
+    $('crit').querySelectorAll('.tab').forEach(b => b.onclick = () => { crit = b.dataset.k; store.set('hl:crit', crit); start(); });
+    const best = () => store.get('hl:best:' + crit, 0);
+    function card(p, show) {
+      const val = C().f(C().v(p));
+      return `<img src="${art(p.id)}" alt=""><h2 style="margin:.2em">${p.n}</h2><div>${typesHtml(p)}</div>
+        <div class="val">${show ? (typeof val === 'number' ? val : val) : '?'}</div>`;
+    }
+    function draw() {
+      $('left').innerHTML = card(A, true);
+      $('right').innerHTML = card(B, false) + `<div class="flex center"><button class="btn" id="hi">⬆️ Plus</button><button class="btn red" id="lo">⬇️ Moins</button></div>`;
+      $('hi').onclick = () => answer(1); $('lo').onclick = () => answer(-1);
+      $('score').textContent = score; $('best').textContent = best();
+      $('crit').querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.k === crit));
+    }
+    function other(p) { let q; do { q = pick(P); } while (q.id === p.id); return q; }
+    function start() { score = 0; A = pick(P); B = other(A); draw(); }
+    function answer(dir) {
+      if (busy) return; busy = true;
+      const a = C().v(A), b = C().v(B);
+      const ok = a === b || (dir > 0 ? b > a : b < a);
+      $('right').innerHTML = card(B, true) + `<h3>${ok ? '✅ Correct !' : '❌ Raté !'}</h3>`;
+      if (ok) {
+        score++; if (score > best()) store.set('hl:best:' + crit, score);
+        if (score % 10 === 0) confetti(40);
+        setTimeout(() => { A = B; B = other(A); busy = false; draw(); }, 1100);
+      } else {
+        $('right').insertAdjacentHTML('beforeend', `<p>Série finale : <b>${score}</b></p><button class="btn" id="re">🔁 Rejouer</button>`);
+        $('re').onclick = () => { busy = false; start(); };
+      }
+    }
+    start();
+  })();
+  </script>
+</body>
+</html>

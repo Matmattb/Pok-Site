@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PokéMonde — Accueil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div>
+        <span class="pill">✨ 1025 Pokémon · 9 générations</span>
+        <h1>Bienvenue dans le <em>PokéMonde</em> !</h1>
+        <p>Le repaire des dresseurs francophones : un Pokédex complet, des outils pour les fans et plein de mini-jeux pour tester tes connaissances, en défi du jour ou en mode illimité.</p>
+        <div class="hero-cta">
+          <a class="btn" href="jeux.html">🎮 Jouer maintenant</a>
+          <a class="btn ghost" href="pokedex.html">📖 Ouvrir le Pokédex</a>
+        </div>
+      </div>
+      <div class="hero-art" id="hero-art"></div>
+    </section>
+
+    <div class="section-title"><h2>🌟 Pokémon du jour</h2></div>
+    <div class="card daily" id="daily"></div>
+
+    <div class="section-title"><h2>🎮 Mini-jeux</h2></div>
+    <div class="grid-games" id="games"></div>
+
+    <div class="section-title"><h2>📚 Pour les fans</h2></div>
+    <div class="grid-games">
+      <a class="game-card" href="pokedex.html"><div class="emoji">📖</div><h3>Pokédex national</h3><p>Les 1025 Pokémon avec stats, talents, évolutions, faiblesses et descriptions.</p><img class="deco" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/479.png" alt=""></a>
+      <a class="game-card" href="types.html"><div class="emoji">🔥</div><h3>Table des types</h3><p>Toutes les forces et faiblesses entre les 18 types, et un calculateur de double type.</p><img class="deco" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/493.png" alt=""></a>
+      <a class="game-card" href="equipe.html"><div class="emoji">🛡️</div><h3>Créateur d'équipe</h3><p>Compose ton équipe de 6 et analyse ses faiblesses et sa couverture de types.</p><img class="deco" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/448.png" alt=""></a>
+    </div>
+
+    <div class="section-title"><h2>💡 Le saviez-vous ?</h2></div>
+    <div class="stats-row" id="facts"></div>
+  </main>
+
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/data-desc.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/pages/accueil.js"></script>
+</body>
+</html>

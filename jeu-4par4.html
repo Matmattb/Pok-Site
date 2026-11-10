@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>4 par 4 — PokéMonde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main class="game-wrap">
+    <div class="page-head">
+      <h1>🟨 4 par 4</h1>
+      <p>Retrouve les <b>4 groupes de 4 Pokémon</b> qui ont un point commun (type, génération, forme spéciale, initiale…). Sélectionne 4 Pokémon puis valide. Attention : 4 erreurs maximum !</p>
+    </div>
+    <div class="game-bar">
+      <div class="tabs" id="kinds" style="margin:0">
+        <button class="tab" data-kind="jour">📅 Grille du jour</button>
+        <button class="tab" data-kind="illimite">♾️ Illimité</button>
+      </div>
+      <button class="btn small" id="newq4">🔁 Nouvelle grille</button>
+      <label class="toggle" id="forms-opt"><input type="checkbox" id="forms"> Inclure les formes (régionales, Méga…)</label>
+    </div>
+    <div class="q4">
+      <div id="solved"></div>
+      <div class="q4-grid" id="grid"></div>
+      <div class="lives" id="lives"></div>
+      <div class="flex center" id="actions">
+        <button class="btn ghost small" id="shuffle">🔀 Mélanger</button>
+        <button class="btn ghost small" id="clear">Désélectionner</button>
+        <button class="btn" id="submit" disabled>Valider</button>
+      </div>
+      <div id="result"></div>
+    </div>
+    <p class="help mt">Chaque grille est vérifiée : chaque Pokémon n'appartient qu'à un seul des 4 groupes, et aucun « faux groupe » de 4 n'est possible avec les catégories du jeu. Du plus simple au plus difficile : 🟨 🟩 🟦 🟪</p>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/categories.js"></script>
+  <script src="assets/js/pages/4par4.js"></script>
+</body>
+</html>

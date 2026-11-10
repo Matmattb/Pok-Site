@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pokédoku — PokéMonde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main class="game-wrap">
+    <div class="page-head">
+      <h1>🧩 Pokédoku</h1>
+      <p>Place dans chaque case un Pokémon qui respecte le critère de sa ligne <b>et</b> de sa colonne. Chaque Pokémon ne peut être utilisé qu'une fois et tu as 9 essais. Toutes les grilles sont vérifiées : elles ont toujours une solution complète.<br>Les <b>formes</b> (Raichu d'Alola, Méga-Dracaufeu X, Motisma Lavage…) comptent comme des réponses à part entière, avec leurs propres types — toujours dans la grille du jour, au choix en illimité.</p>
+    </div>
+    <div class="game-bar">
+      <div class="tabs" id="kinds" style="margin:0">
+        <button class="tab" data-kind="jour">📅 Grille du jour</button>
+        <button class="tab" data-kind="illimite">♾️ Illimité</button>
+      </div>
+      <select id="level" title="Difficulté">
+        <option value="facile">Facile</option>
+        <option value="normal">Normal</option>
+        <option value="difficile">Difficile</option>
+      </select>
+      <button class="btn small" id="new">🔁 Nouvelle grille</button>
+      <label class="toggle" id="forms-opt" title="Raichu d'Alola, Méga-Dracaufeu X, Motisma Lavage… comptent comme des réponses à part entière"><input type="checkbox" id="forms"> Formes acceptées</label>
+    </div>
+    <div class="doku" id="doku"></div>
+    <div class="flex center mt" id="actions"></div>
+    <div id="result"></div>
+    <p class="help mt">Astuce : clique sur un critère pour lire sa définition exacte. À la fin, clique sur une case pour voir toutes les réponses possibles.</p>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/categories.js"></script>
+  <script src="assets/js/pages/pokedoku.js"></script>
+</body>
+</html>

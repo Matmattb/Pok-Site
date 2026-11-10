@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Créateur d'équipe — PokéMonde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main>
+    <div class="page-head">
+      <h1>🛡️ Créateur d'équipe</h1>
+      <p>Compose ton équipe de rêve (6 Pokémon maximum) et découvre ses points faibles. Ton équipe est sauvegardée automatiquement.</p>
+    </div>
+    <div id="pick"></div>
+    <div class="team-slots" id="slots"></div>
+    <div class="flex center"><button class="btn ghost small" id="random">🎲 Équipe aléatoire</button><button class="btn ghost small" id="share">🔗 Copier le lien</button><button class="btn red small" id="clear">Vider</button></div>
+    <div class="poke-detail mt">
+      <div class="card"><h2>Défense</h2><p class="muted">Nombre de membres faibles / résistants à chaque type d'attaque.</p><table class="cov-table" id="def"></table></div>
+      <div class="card"><h2>Couverture offensive</h2><p class="muted">Types touchés en super efficace par au moins un type de ton équipe (attaques du même type).</p><div id="off"></div></div>
+    </div>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+  (function () {
+    const { P, D, byId, sprite, typesHtml, effOn, store } = PK;
+    const fromUrl = (new URLSearchParams(location.search).get('e') || '').split(',').map(Number).filter(i => byId[i]);
+    let team = fromUrl.length ? fromUrl.slice(0, 6) : store.get('team', []).filter(i => byId[i]);
+    PK.picker(document.getElementById('pick'), {
+      placeholder: 'Ajouter un Pokémon à l\'équipe…',
+      exclude: () => new Set(team),
+      onPick: p => { if (team.length >= 6) return PK.toast('Équipe complète (6 max)'); team.push(p.id); render(); },
+    });
+    function render() {
+      store.set('team', team);
+      const s = document.getElementById('slots');
+      s.innerHTML = Array.from({ length: 6 }, (_, i) => {
+        const p = byId[team[i]];
+        return p ? `<div class="team-slot filled"><button class="rm" data-i="${i}" title="Retirer">×</button><a href="pokemon.html?id=${p.id}"><img src="${sprite(p.id)}" alt=""></a><b>${p.n}</b><div>${typesHtml(p)}</div></div>`
+          : `<div class="team-slot muted">Emplacement ${i + 1}</div>`;
+      }).join('');
+      s.querySelectorAll('.rm').forEach(b => b.onclick = () => { team.splice(+b.dataset.i, 1); render(); });
+      const mons = team.map(i => byId[i]);
+      document.getElementById('def').innerHTML = '<tr><th>Type</th><th>Faibles</th><th>Résistants</th></tr>' + D.types.map(t => {
+        const w = mons.filter(p => effOn(t.id, p.t) > 1).length, r = mons.filter(p => effOn(t.id, p.t) < 1).length;
+        return `<tr><td>${PK.typeBadge(t.id)}</td><td class="${w >= 3 ? 'bad' : ''}">${w || '–'}</td><td class="${r >= 2 ? 'good' : ''}">${r || '–'}</td></tr>`;
+      }).join('');
+      const atk = new Set(mons.flatMap(p => p.t));
+      const hit = D.types.filter(d => [...atk].some(a => D.eff[a - 1][d.id - 1] === 2));
+      const miss = D.types.filter(d => !hit.includes(d));
+      document.getElementById('off').innerHTML = mons.length ? `<p><b>Couverts (${hit.length}/18)</b><br>${hit.map(t => PK.typeBadge(t.id)).join(' ')}</p><p><b>Non couverts</b><br>${miss.map(t => PK.typeBadge(t.id)).join(' ') || 'Aucun, bravo !'}</p>` : '<p class="muted">Ajoute des Pokémon.</p>';
+    }
+    document.getElementById('clear').onclick = () => { team = []; render(); };
+    document.getElementById('random').onclick = () => { team = PK.shuffle(P.filter(p => !p.evo)).slice(0, 6).map(p => p.id); render(); };
+    document.getElementById('share').onclick = () => {
+      const url = location.href.split('?')[0] + '?e=' + team.join(',');
+      navigator.clipboard && navigator.clipboard.writeText(url).then(() => PK.toast('Lien copié !'), () => prompt('Copie ce lien :', url));
+    };
+    render();
+  })();
+  </script>
+</body>
+</html>

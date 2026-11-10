@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quiz des types — PokéMonde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+  <main class="game-wrap">
+    <div class="page-head">
+      <h1>⚡ Quiz des types</h1>
+      <p>Une attaque est lancée sur un Pokémon : quelle est son efficacité ? Tu as 3 vies, enchaîne les bonnes réponses !</p>
+    </div>
+    <div class="flex center"><span class="pill counter">Série : <b id="score">0</b></span><span class="pill counter">Record : <b id="best">0</b></span><span class="pill counter" id="lives"></span></div>
+    <div class="card mt center" id="q"></div>
+    <div class="quiz-choices" id="choices"></div>
+    <div class="center" id="after"></div>
+  </main>
+  <script src="assets/js/data.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script>
+  (function () {
+    const { P, D, art, typesHtml, typeBadge, effOn, store, toast, pick } = PK;
+    const $ = id => document.getElementById(id);
+    const CHOICES = [0, .25, .5, 1, 2, 4];
+    const lbl = m => ({ 0: '×0', .25: '×¼', .5: '×½', 1: '×1', 2: '×2', 4: '×4' })[m];
+    const TXT = { 0: 'Aucun effet…', .25: 'Vraiment pas très efficace…', .5: 'Pas très efficace…', 1: 'Efficacité normale.', 2: 'Super efficace !', 4: 'Extrêmement efficace !' };
+    let score = 0, lives = 3, best = store.get('quiz:best', 0), cur;
+    function next() {
+      // on favorise les cas intéressants (pas uniquement ×1)
+      let atk, mon, m;
+      do { atk = 1 + Math.floor(Math.random() * 18); mon = pick(P); m = effOn(atk, mon.t); } while (m === 1 && Math.random() < .6);
+      cur = { atk, mon, m };
+      $('q').innerHTML = `<p>Attaque de type ${typeBadge(atk)} sur…</p><img src="${art(mon.id)}" style="width:170px" alt=""><h2 style="margin:.2em">${mon.n}</h2><div>${typesHtml(mon)}</div>`;
+      $('choices').innerHTML = CHOICES.map(c => `<button class="btn ghost" data-m="${c}">${lbl(c)}</button>`).join('');
+      $('choices').querySelectorAll('button').forEach(b => b.onclick = () => answer(+b.dataset.m, b));
+      $('after').innerHTML = '';
+      upd();
+    }
+    function upd() { $('score').textContent = score; $('best').textContent = best; $('lives').innerHTML = '❤️'.repeat(lives) + '🖤'.repeat(3 - lives); }
+    function answer(m, btn) {
+      $('choices').querySelectorAll('button').forEach(b => { b.disabled = true; if (+b.dataset.m === cur.m) b.classList.add('right'); });
+      const detail = cur.mon.t.map(t => `${D.types[cur.atk - 1].name} → ${D.types[t - 1].name} : ${lbl(D.eff[cur.atk - 1][t - 1])}`).join(' · ');
+      if (m === cur.m) { score++; if (score > best) { best = score; store.set('quiz:best', best); } toast('✅ ' + TXT[cur.m]); }
+      else { btn.classList.add('bad'); lives--; }
+      upd();
+      $('after').innerHTML = `<p class="muted">${detail}</p>` + (lives > 0 ? '<button class="btn" id="nx">Suivant →</button>' : `<h2>Partie terminée : ${score} bonne(s) réponse(s)</h2><button class="btn" id="re">🔁 Rejouer</button>`);
+      $('nx') && ($('nx').onclick = next);
+      $('re') && ($('re').onclick = () => { score = 0; lives = 3; next(); });
+      ($('nx') || $('re')).focus();
+    }
+    next();
+  })();
+  </script>
+</body>
+</html>
