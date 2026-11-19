@@ -6,7 +6,7 @@ Une connexion Internet est requise pour les images et les cris (hébergés par P
 ## Pages
 | Fichier | Contenu |
 |---|---|
-| `index.html` | Accueil : héros, Pokémon du jour, jeux, pages fans, anecdotes |
+| `index.html` | Accueil : ambiance légendaire, Pokémon du jour, jeux, pages fans, anecdotes |
 | `pokedex.html` / `pokemon.html?id=N` | Pokédex des 1025 Pokémon + fiche détaillée |
 | `types.html` | Table des types + calculateur de faiblesses |
 | `equipe.html` | Créateur d'équipe avec analyse défensive/offensive |
@@ -17,6 +17,7 @@ Une connexion Internet est requise pour les images et les cris (hébergés par P
 | `jeu-quiz-types.html`, `jeu-plus-ou-moins.html`, `jeu-memory.html`, `jeu-chrono.html` | Autres mini-jeux |
 
 ## Personnaliser
+- **Ambiances de l'accueil** (Sinnoh, Hoenn, Unys, Kalos, Alola, Galar, Golems) : `assets/js/pages/legendes.js` (objet `THEMES`) et `assets/css/legendes.css`. Une ambiance au hasard à chaque visite ; le bouton 🎨 en bas à droite permet d'en fixer une (retenue dans le navigateur).
 - **Couleurs / polices** : variables en haut de `assets/css/style.css` (`:root`).
 - **Menu et liste des jeux** : tableau `GAMES` dans `assets/js/common.js`.
 - **Catégories du Pokédoku et du 4 par 4** : `assets/js/categories.js`.

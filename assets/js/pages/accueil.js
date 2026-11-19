@@ -1,11 +1,6 @@
 (function () {
   const { P, byId, art, typesHtml, GAMES, dailyRng, pick, fmtH, fmtW, num, bst } = PK;
 
-  // Trio du héros : un trio différent à chaque visite
-  const TRIOS = [[25, 1, 4], [6, 9, 3], [150, 151, 249], [384, 382, 383], [448, 445, 658], [887, 815, 812], [1007, 1008, 906], [94, 133, 143], [282, 700, 197]];
-  const trio = pick(TRIOS);
-  document.getElementById('hero-art').innerHTML = trio.map(id => `<img src="${art(id)}" alt="${byId[id].n}">`).join('');
-
   // Pokémon du jour
   const d = pick(P.filter(p => window.PKDESC && PKDESC[p.id]), dailyRng('accueil'));
   const desc = (window.PKDESC && PKDESC[d.id]) || 'Aucune description disponible.';
@@ -13,7 +8,7 @@
     <img src="${art(d.id)}" alt="${d.n}">
     <div>
       <div class="muted"><b>${num(d.id)}</b> · ${d.g} · Génération ${d.gen}</div>
-      <h2 style="font-size:2rem;margin:.2em 0">${d.n}</h2>
+      <h2>${d.n}</h2>
       <div>${typesHtml(d)}</div>
       <p style="font-style:italic">« ${desc} »</p>
       <div class="flex"><span class="pill">📏 ${fmtH(d.h)}</span><span class="pill">⚖️ ${fmtW(d.w)}</span><span class="pill">📊 Total ${bst(d)}</span></div>
